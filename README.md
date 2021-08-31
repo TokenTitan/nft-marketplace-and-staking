@@ -1,1 +1,1 @@
-This is a sample nft marketplace priject
+This is a sample nft marketplace project

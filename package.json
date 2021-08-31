@@ -1,0 +1,27 @@
+{
+  "name": "nft-marketplace-mock",
+  "version": "1.0.0",
+  "description": "This is a sample nft marketplace project",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/capedcrusader11/nft-marketplace-mock.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/capedcrusader11/nft-marketplace-mock/issues"
+  },
+  "homepage": "https://github.com/capedcrusader11/nft-marketplace-mock#readme",
+  "devDependencies": {
+    "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "ethers": "^5.4.6",
+    "hardhat": "^2.6.1"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.3.1"
+  }
+}
