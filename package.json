@@ -18,10 +18,11 @@
   "homepage": "https://github.com/capedcrusader11/nft-marketplace-mock#readme",
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "@openzeppelin/hardhat-upgrades": "^1.10.0",
     "ethers": "^5.4.6",
     "hardhat": "^2.6.1"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.3.1"
+    "@openzeppelin/contracts-upgradeable": "^4.3.1"
   }
 }
