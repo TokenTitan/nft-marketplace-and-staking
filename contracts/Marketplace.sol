@@ -114,8 +114,32 @@ contract Marketplace is AccessControlUpgradeable {
             hasSufficientBalance(acceptedERC20, commodity.listedPrice),
             "Marketplace: Insufficient Balance"
         );
+        require(
+            acceptedERC20.allowance(msg.sender, address(this)) >=
+                commodity.listedPrice,
+            "Marketplace: Insufficient allowance to fetch funds"
+        );
 
-        // TODO: Transfer commodity to buyer and update contract state data
+        // TODO: Pull eth for payment 
+        acceptedERC20.transferFrom(
+            msg.sender,
+            address(this),
+            commodity.listedPrice
+        );
+
+        commodity.commodityType == TokenTypes.ERC721
+            ? IERC721Upgradeable(commodity.assetContract).transferFrom(
+                commodity.owner,
+                msg.sender,
+                commodity.id
+            )
+            : IERC1155Upgradeable(commodity.assetContract).safeTransferFrom(
+                commodity.owner,
+                msg.sender,
+                commodity.id,
+                commodity.amount,
+                bytes("Commodity Bought")
+            );
     }
 
     // function buyByCommodity(address _erc721, uint256 _id) {}
