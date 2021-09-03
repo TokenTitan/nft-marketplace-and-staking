@@ -35,6 +35,7 @@ contract Marketplace is AccessControlUpgradeable {
 
     // Events
     event ItemListedForSale(uint256 _saleId);
+    event Sold(uint256 _saleId, address _owner);
 
     function initialize(IERC20Upgradeable _weth) external initializer {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -56,7 +57,9 @@ contract Marketplace is AccessControlUpgradeable {
             "Marketplace: Permission not granted to manage asset"
         );
 
-        counter++;
+        saleId = saleIdByCommodity[_erc1155][_id] == 0
+            ? counter++
+            : saleIdByCommodity[_erc1155][_id];
         Commodity memory commodity = Commodity({
             commodityType: TokenTypes.ERC1155,
             owner: msg.sender,
@@ -67,10 +70,9 @@ contract Marketplace is AccessControlUpgradeable {
             listedPrice: _price,
             listedForSale: true
         });
-        saleId = counter++;
         commoditiesForSale[saleId] = commodity;
         saleIdByCommodity[_erc1155][_id] = saleId;
-        emit ItemListedForSale(counter);
+        emit ItemListedForSale(saleId);
     }
 
     function listForSale(
@@ -87,6 +89,9 @@ contract Marketplace is AccessControlUpgradeable {
             "Marketplace: Permission not granted to manage asset"
         );
 
+        saleId = saleIdByCommodity[_erc721][_id] == 0
+            ? counter++
+            : saleIdByCommodity[_erc721][_id];
         Commodity memory commodity = Commodity({
             commodityType: TokenTypes.ERC721,
             owner: msg.sender,
@@ -97,10 +102,9 @@ contract Marketplace is AccessControlUpgradeable {
             listedPrice: _price,
             listedForSale: true
         });
-        saleId = counter++;
         commoditiesForSale[saleId] = commodity;
         saleIdByCommodity[_erc721][_id] = saleId;
-        emit ItemListedForSale(counter);
+        emit ItemListedForSale(saleId);
     }
 
     function buy(uint256 _saleId) external {
@@ -120,7 +124,7 @@ contract Marketplace is AccessControlUpgradeable {
             "Marketplace: Insufficient allowance to fetch funds"
         );
 
-        // TODO: Pull eth for payment 
+        // TODO: Pull eth for payment
         acceptedERC20.transferFrom(
             msg.sender,
             address(this),
@@ -140,10 +144,15 @@ contract Marketplace is AccessControlUpgradeable {
                 commodity.amount,
                 bytes("Commodity Bought")
             );
+
+        _updateSale(_saleId);
+        emit Sold(_saleId, msg.sender);
     }
 
-    // function buyByCommodity(address _erc721, uint256 _id) {}
-    // function buyByCommodity(address _erc1155, uint256 _id, uint256 _amount) {}
+    function _updateSale(uint256 _saleId) internal {
+        commoditiesForSale[_saleId].listedForSale = false;
+        commoditiesForSale[_saleId].owner = msg.sender;
+    }
 
     // Getters
 
