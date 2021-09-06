@@ -14,9 +14,6 @@ contract Marketplace is AccessControlUpgradeable {
         ERC721
     }
 
-    mapping(uint256 => Commodity) public commoditiesForSale;
-    mapping(address => mapping(uint256 => uint256)) internal saleIdByCommodity;
-
     // keccak256("DEFAULT_ADMIN_ROLE");
     bytes32 internal constant ADMIN_ROLE =
         0x1effbbff9c66c5e59634f24fe842750c60d18891155c32dd155fc2d661a4c86d;
@@ -24,18 +21,22 @@ contract Marketplace is AccessControlUpgradeable {
     // Struct
     struct Commodity {
         TokenTypes commodityType;
-        address owner;
+        address seller;
         address assetContract;
         uint256 id;
         uint256 amount;
-        address acceptedERC20;
-        uint256 listedPrice;
-        bool listedForSale;
+        IERC20Upgradeable acceptedERC20;
+        uint256 price;
+        bool available;
     }
 
+    // Mappings
+    mapping(uint256 => Commodity) public commoditiesForSale;
+    mapping(address => mapping(uint256 => uint256)) internal saleIdByCommodity;
+
     // Events
-    event ItemListedForSale(uint256 _saleId);
-    event Sold(uint256 _saleId, address _owner);
+    event ItemListedForSale(uint256 indexed _saleId);
+    event Sold(uint256 indexed _saleId, address _seller);
 
     function initialize(IERC20Upgradeable _weth) external initializer {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -50,6 +51,11 @@ contract Marketplace is AccessControlUpgradeable {
         uint256 _price
     ) external returns (uint256 saleId) {
         require(
+            IERC1155Upgradeable(_erc1155).balanceOf(msg.sender, _id) > _amount,
+            "Marketplace: Can only sell the amount owned"
+        );
+
+        require(
             IERC1155Upgradeable(_erc1155).isApprovedForAll(
                 msg.sender,
                 address(this)
@@ -60,15 +66,18 @@ contract Marketplace is AccessControlUpgradeable {
         saleId = saleIdByCommodity[_erc1155][_id] == 0
             ? counter++
             : saleIdByCommodity[_erc1155][_id];
+        IERC20Upgradeable acceptedERC20 = _acceptedERC20 == address(0)
+            ? weth
+            : IERC20Upgradeable(_acceptedERC20);
         Commodity memory commodity = Commodity({
             commodityType: TokenTypes.ERC1155,
-            owner: msg.sender,
+            seller: msg.sender,
             assetContract: _erc1155,
             id: _id,
             amount: _amount,
-            acceptedERC20: _acceptedERC20,
-            listedPrice: _price,
-            listedForSale: true
+            acceptedERC20: acceptedERC20,
+            price: _price,
+            available: true
         });
         commoditiesForSale[saleId] = commodity;
         saleIdByCommodity[_erc1155][_id] = saleId;
@@ -82,6 +91,11 @@ contract Marketplace is AccessControlUpgradeable {
         uint256 _price
     ) external returns (uint256 saleId) {
         require(
+            IERC721Upgradeable(_erc721).ownerOf(_id) == msg.sender,
+            "Marketplace: Only Owner can create sale"
+        );
+
+        require(
             IERC721Upgradeable(_erc721).isApprovedForAll(
                 msg.sender,
                 address(this)
@@ -92,89 +106,95 @@ contract Marketplace is AccessControlUpgradeable {
         saleId = saleIdByCommodity[_erc721][_id] == 0
             ? counter++
             : saleIdByCommodity[_erc721][_id];
+
+        IERC20Upgradeable acceptedERC20 = _acceptedERC20 == address(0)
+            ? weth
+            : IERC20Upgradeable(_acceptedERC20);
         Commodity memory commodity = Commodity({
             commodityType: TokenTypes.ERC721,
-            owner: msg.sender,
+            seller: msg.sender,
             assetContract: _erc721,
             id: _id,
             amount: 1,
-            acceptedERC20: _acceptedERC20,
-            listedPrice: _price,
-            listedForSale: true
+            acceptedERC20: acceptedERC20,
+            price: _price,
+            available: true
         });
         commoditiesForSale[saleId] = commodity;
         saleIdByCommodity[_erc721][_id] = saleId;
         emit ItemListedForSale(saleId);
     }
 
-    function buy(uint256 _saleId) external {
+    function buy(uint256 _saleId) external payable {
         Commodity memory commodity = commoditiesForSale[_saleId];
-        IERC20Upgradeable acceptedERC20 = (commodity.acceptedERC20 ==
-            address(0))
-            ? weth
-            : IERC20Upgradeable(commodity.acceptedERC20);
-
         require(
-            hasSufficientBalance(acceptedERC20, commodity.listedPrice),
-            "Marketplace: Insufficient Balance"
-        );
-        require(
-            acceptedERC20.allowance(msg.sender, address(this)) >=
-                commodity.listedPrice,
-            "Marketplace: Insufficient allowance to fetch funds"
+            commodity.available,
+            "Marketplace: Currently not available for sale"
         );
 
-        // TODO: Pull eth for payment
-        acceptedERC20.transferFrom(
-            msg.sender,
-            address(this),
-            commodity.listedPrice
-        );
+        commoditiesForSale[_saleId].available = false;
+        commoditiesForSale[_saleId].seller = msg.sender;
 
-        commodity.commodityType == TokenTypes.ERC721
-            ? IERC721Upgradeable(commodity.assetContract).transferFrom(
-                commodity.owner,
-                msg.sender,
-                commodity.id
-            )
-            : IERC1155Upgradeable(commodity.assetContract).safeTransferFrom(
-                commodity.owner,
-                msg.sender,
-                commodity.id,
-                commodity.amount,
-                bytes("Commodity Bought")
+        if (msg.value == 0) {
+            require(
+                commodity.acceptedERC20.balanceOf(msg.sender) > commodity.price,
+                "Marketplace: Insufficient Balance"
+            );
+            require(
+                commodity.acceptedERC20.allowance(msg.sender, address(this)) >=
+                    commodity.price,
+                "Marketplace: Insufficient allowance to fetch funds"
             );
 
-        _updateSale(_saleId);
+            commodity.acceptedERC20.transferFrom(
+                msg.sender,
+                address(this),
+                commodity.price
+            );
+            _executeSale(commodity, _saleId);
+        } else if (
+            commodity.acceptedERC20 == weth && commodity.price >= msg.value
+        ) {
+            uint256 remainder = msg.value - commodity.price;
+            if (remainder != 0) {
+                payable(msg.sender).transfer(remainder);
+            }
+            _executeSale(commodity, _saleId);
+        } else {
+            payable(msg.sender).transfer(msg.value);
+        }
+    }
+
+    function _executeSale(Commodity memory _commodity, uint256 _saleId)
+        internal
+    {
+        _commodity.commodityType == TokenTypes.ERC721
+            ? IERC721Upgradeable(_commodity.assetContract).transferFrom(
+                _commodity.seller,
+                msg.sender,
+                _commodity.id
+            )
+            : IERC1155Upgradeable(_commodity.assetContract).safeTransferFrom(
+                _commodity.seller,
+                msg.sender,
+                _commodity.id,
+                _commodity.amount,
+                bytes("Commodity Bought")
+            );
         emit Sold(_saleId, msg.sender);
     }
 
-    function _updateSale(uint256 _saleId) internal {
-        commoditiesForSale[_saleId].listedForSale = false;
-        commoditiesForSale[_saleId].owner = msg.sender;
+    function cancelSale(uint256 _saleId) external {
+        commoditiesForSale[_saleId].available = false;
     }
 
     // Getters
 
-    function listedForSale(address _token, uint256 _id)
+    function commodityAvailable(address _token, uint256 _id)
         external
         view
         returns (uint256 saleId)
     {
         return saleIdByCommodity[_token][_id];
-    }
-
-    function hasSufficientBalance(
-        IERC20Upgradeable _acceptedERC20,
-        uint256 _amount
-    ) internal view returns (bool balanceCheck) {
-        balanceCheck = _acceptedERC20.balanceOf(msg.sender) > _amount;
-        if (
-            !balanceCheck &&
-            _acceptedERC20 == weth &&
-            msg.sender.balance > _amount
-        ) {
-            balanceCheck = true;
-        }
     }
 }
