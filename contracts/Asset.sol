@@ -4,7 +4,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
 contract Asset is ERC1155Upgradeable, AccessControlUpgradeable {
-    uint256 counter;
+    uint256 public counter;
 
     // keccak256("DEFAULT_ADMIN_ROLE");
     bytes32 internal constant ADMIN_ROLE =
