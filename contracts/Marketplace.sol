@@ -6,17 +6,13 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol"
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 
 contract Marketplace is AccessControlUpgradeable {
-    uint256 counter;
-    IERC20Upgradeable weth;
+    uint256 public counter;
+    IERC20Upgradeable public weth;
 
     enum TokenTypes {
         ERC1155,
         ERC721
     }
-
-    // keccak256("DEFAULT_ADMIN_ROLE");
-    bytes32 internal constant ADMIN_ROLE =
-        0x1effbbff9c66c5e59634f24fe842750c60d18891155c32dd155fc2d661a4c86d;
 
     // Struct
     struct Commodity {
@@ -39,7 +35,6 @@ contract Marketplace is AccessControlUpgradeable {
     event Sold(uint256 indexed _saleId, address _seller);
 
     function initialize(IERC20Upgradeable _weth) external initializer {
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
         weth = _weth;
     }
 
