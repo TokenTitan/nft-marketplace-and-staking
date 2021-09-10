@@ -46,7 +46,7 @@ contract Marketplace is AccessControlUpgradeable {
         uint256 _price
     ) external returns (uint256 saleId) {
         require(
-            IERC1155Upgradeable(_erc1155).balanceOf(msg.sender, _id) > _amount,
+            IERC1155Upgradeable(_erc1155).balanceOf(msg.sender, _id) >= _amount,
             "Marketplace: Can only sell the amount owned"
         );
 
@@ -57,9 +57,10 @@ contract Marketplace is AccessControlUpgradeable {
             ),
             "Marketplace: Permission not granted to manage asset"
         );
-
+        
+        counter++;
         saleId = saleIdByCommodity[_erc1155][_id] == 0
-            ? counter++
+            ? counter
             : saleIdByCommodity[_erc1155][_id];
         IERC20Upgradeable acceptedERC20 = _acceptedERC20 == address(0)
             ? weth
@@ -97,9 +98,10 @@ contract Marketplace is AccessControlUpgradeable {
             ),
             "Marketplace: Permission not granted to manage asset"
         );
-
+        
+        counter++;
         saleId = saleIdByCommodity[_erc721][_id] == 0
-            ? counter++
+            ? counter
             : saleIdByCommodity[_erc721][_id];
 
         IERC20Upgradeable acceptedERC20 = _acceptedERC20 == address(0)
@@ -188,8 +190,9 @@ contract Marketplace is AccessControlUpgradeable {
     function commodityAvailable(address _token, uint256 _id)
         external
         view
-        returns (uint256 saleId)
+        returns (bool)
     {
-        return saleIdByCommodity[_token][_id];
+        uint256 saleId = saleIdByCommodity[_token][_id];
+        return commoditiesForSale[saleId].available;
     }
 }
