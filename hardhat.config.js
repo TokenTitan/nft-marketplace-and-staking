@@ -17,6 +17,11 @@ module.exports = {
       throwOnTransactionFailures: true,
       loggingEnabled: true,
     },
+    arbitrum: {
+      url: process.env.ARBITRUM_ALCHEMY_URL,
+      accounts: [`0x${process.env.DEPLOYER_PRIVATE_KEY}`],
+      gasPrice: 0,
+    },
   },
   namedAccounts: {
     deployer: 0,

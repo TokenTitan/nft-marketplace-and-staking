@@ -9,7 +9,7 @@ module.exports = async ({ getNamedAccounts, ethers, upgrades }) => {
   const Marketplace = await ethers.getContractFactory("Marketplace");
   const marketplace = await deployProxy(
     Marketplace,
-    [process.env.WETH_CONTRACT],
+    [process.env.POS_WETH_CONTRACT], // POS_WETH_CONTRACT when deploying on Mumbai
     {
       from: deployer,
     }
