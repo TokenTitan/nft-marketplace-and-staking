@@ -1,1 +1,9 @@
-This is a sample nft marketplace project
+A simple nft marketplace project
+
+MATIC
+Marketplace deployed to: 0x58E5a7b455b588B74cBa27933B22E694D7242682
+Child Asset deployed to: 0x833071d6906e1E0585F1c2579ffe70dfef8E0914
+
+GORLI
+Marketplace deployed to: 0xbEda9af730474608B4c6b7DfAF5b491a13baeCf0
+Asset deployed to: 0x9f75b3478cBdDe99CB75280ca6B1Ed8826AB797f
