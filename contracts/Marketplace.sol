@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: UNLICENSED
+
 pragma solidity 0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
@@ -145,7 +147,7 @@ contract Marketplace is AccessControlUpgradeable {
 
             commodity.acceptedERC20.transferFrom(
                 msg.sender,
-                address(this),
+                commodity.seller,
                 commodity.price
             );
             _executeSale(commodity, _saleId);
@@ -156,6 +158,7 @@ contract Marketplace is AccessControlUpgradeable {
             if (remainder != 0) {
                 payable(msg.sender).transfer(remainder);
             }
+            payable(commodity.seller).transfer(commodity.price);
             _executeSale(commodity, _saleId);
         } else {
             payable(msg.sender).transfer(msg.value);

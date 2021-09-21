@@ -1,21 +1,20 @@
 const dotenv = require("dotenv");
 dotenv.config();
 
-module.exports = async ({ getNamedAccounts, ethers, upgrades }) => {
-  const { deployProxy } = upgrades;
+module.exports = async ({ getNamedAccounts, deployments }) => {
+  const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
   console.log("Deploying marketplace from account", deployer);
 
-  const Marketplace = await ethers.getContractFactory("Marketplace");
-  const marketplace = await deployProxy(
-    Marketplace,
-    [process.env.POS_WETH_CONTRACT], // POS_WETH_CONTRACT when deploying on Mumbai
-    {
-      from: deployer,
-    }
-  );
+  const marketplace = await deploy("Marketplace", {
+    from: deployer,
+    proxy: {
+      owner: deployer,
+      method: "initialize",
+      args: [process.env.GORLI_WETH_CONTRACT], // MUMBAI_WETH_CONTRACT when deploying on Mumbai
+    },
+  });
 
-  await marketplace.deployed();
   console.log("Marketplace deployed to:", marketplace.address);
 };
 module.exports.tags = ["Marketplace"];

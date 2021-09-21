@@ -1,19 +1,30 @@
 const dotenv = require("dotenv");
 dotenv.config();
 
-module.exports = async ({ getNamedAccounts, ethers, upgrades }) => {
-  const { deployProxy } = upgrades;
+module.exports = async ({ getNamedAccounts, deployments }) => {
+  const { deploy } = deployments;
   const { deployer } = await getNamedAccounts();
   console.log("Deploying asset from account", deployer);
 
-  const Asset = await ethers.getContractFactory("Asset");
-  const asset = await deployProxy(Asset, [""], { from: deployer });
+  const asset = await deploy("Asset", {
+    from: deployer,
+    proxy: {
+      owner: deployer,
+      method: "initialize",
+      args: [""],
+    },
+  });
 
-  // Deploying Child Asset when deploying on Matic
-  // const Asset = await ethers.getContractFactory("ChildAsset");
-  // const asset = await deployProxy(Asset, ["", process.env.CHILD_CHAIN_MANAGER_PROXY], { from: deployer });
+  // Deploying Child Asset when deploying on Mumbai/Matic
+  // const asset = await deploy("ChildAsset", {
+  //   from: deployer,
+  //   proxy: {
+  //     owner: deployer,
+  //     method: "initialize",
+  //     args: ["", process.env.CHILD_CHAIN_MANAGER_PROXY],
+  //   },
+  // });
 
-  await asset.deployed();
   console.log("Asset deployed to:", asset.address);
 };
 module.exports.tags = ["Asset"];
