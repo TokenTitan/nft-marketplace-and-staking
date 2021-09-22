@@ -8,9 +8,9 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol"
 contract Asset is ERC1155Upgradeable, AccessControlUpgradeable {
     uint256 public counter;
 
-    // keccak256("DEFAULT_ADMIN_ROLE");
+    // keccak256("ADMIN_ROLE");
     bytes32 internal constant ADMIN_ROLE =
-        0x1effbbff9c66c5e59634f24fe842750c60d18891155c32dd155fc2d661a4c86d;
+        0xa49807205ce4d355092ef5a8a18f56e8913cf4a201fbe287825b095693c21775;
 
     // Events
     event ItemForged(uint256 _id);
@@ -25,8 +25,8 @@ contract Asset is ERC1155Upgradeable, AccessControlUpgradeable {
     }
 
     function initialize(string memory _uri) external initializer {
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _setURI(_uri); // not sure
+        _setupRole(ADMIN_ROLE, msg.sender);
+        _setURI(_uri);
     }
 
     function forge(

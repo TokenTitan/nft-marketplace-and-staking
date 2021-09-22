@@ -4,3 +4,4 @@ cache/
 deployments/
 .env
 .openzeppelin
+.deps/
