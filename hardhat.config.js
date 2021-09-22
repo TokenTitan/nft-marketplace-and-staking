@@ -1,6 +1,8 @@
 require("@openzeppelin/hardhat-upgrades");
 require("hardhat-deploy");
 require("@nomiclabs/hardhat-ethers");
+require("@nomiclabs/hardhat-etherscan");
+
 const dotenv = require("dotenv");
 const { version } = require("ethers");
 dotenv.config();
@@ -16,7 +18,7 @@ module.exports = {
     },
   },
   networks: {
-    gorli: {
+    goerli: {
       url: process.env.GORLI_INFURA_URL,
       accounts: [`0x${process.env.DEPLOYER_PRIVATE_KEY}`],
       throwOnTransactionFailures: true,
@@ -31,5 +33,8 @@ module.exports = {
   },
   namedAccounts: {
     deployer: 0,
+  },
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_API_KEY,
   },
 };

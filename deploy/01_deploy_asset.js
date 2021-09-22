@@ -11,7 +11,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     proxy: {
       owner: deployer,
       method: "initialize",
-      args: [""],
+      args: ["https://goerli.etherscan.io/"],
     },
   });
 
