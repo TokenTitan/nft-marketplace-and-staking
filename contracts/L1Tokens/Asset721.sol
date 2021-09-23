@@ -2,10 +2,10 @@
 
 pragma solidity 0.8.0;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
-contract Asset1155 is ERC1155Upgradeable, AccessControlUpgradeable {
+contract Asset721 is ERC721Upgradeable, AccessControlUpgradeable {
     uint256 public counter;
 
     // keccak256("ADMIN_ROLE");
@@ -24,18 +24,13 @@ contract Asset1155 is ERC1155Upgradeable, AccessControlUpgradeable {
         _;
     }
 
-    function initialize(string memory _uri) external initializer {
+    function initialize() external initializer {
         _setupRole(ADMIN_ROLE, msg.sender);
-        _setURI(_uri);
     }
 
-    function forge(
-        address _user,
-        uint256 _amount,
-        bytes memory _data
-    ) external onlyAdmin returns (uint256) {
+    function forge(address _user) external onlyAdmin returns (uint256) {
         counter++;
-        _mint(_user, counter, _amount, _data);
+        _mint(_user, counter);
         emit ItemForged(counter);
         return counter;
     }
@@ -44,7 +39,7 @@ contract Asset1155 is ERC1155Upgradeable, AccessControlUpgradeable {
         public
         view
         virtual
-        override(ERC1155Upgradeable, AccessControlUpgradeable)
+        override(ERC721Upgradeable, AccessControlUpgradeable)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
