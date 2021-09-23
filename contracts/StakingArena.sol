@@ -5,6 +5,8 @@ pragma solidity 0.8.0;
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/utils/ERC1155HolderUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC1155/IERC1155Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 
 import "./interfaces/ITazos.sol";
 
@@ -14,16 +16,16 @@ contract StakingArena is ERC1155HolderUpgradeable, AccessControlUpgradeable {
     // keccak256("ADMIN_ROLE");
     bytes32 internal constant ADMIN_ROLE =
         0xa49807205ce4d355092ef5a8a18f56e8913cf4a201fbe287825b095693c21775;
-    uint256 constant public UNIT = 10**18;
-    uint256 constant public PERIOD_DURATION = 30 days;
-    uint256 constant public REWARD_PER_PERIOD = 1;
+    uint256 public constant UNIT = 10**18;
+    uint256 public constant PERIOD_DURATION = 30 days;
+    uint256 public constant REWARD_PER_PERIOD = 1;
 
     uint8 public counter;
     uint256 public totalAllocPoint;
     uint256 public startTime;
     uint256 public currentPeriod;
 
-    ITazos tazos;
+    ITazos public tazos;
 
     enum TokenTypes {
         ERC1155,
@@ -40,6 +42,7 @@ contract StakingArena is ERC1155HolderUpgradeable, AccessControlUpgradeable {
 
     mapping(uint8 => Pool) public poolInfo;
     mapping(address => mapping(uint256 => uint8)) public poolIdByAddress;
+    mapping(address => mapping(uint256 => address)) public ownerInfo;
 
     function initialize(ITazos _tazos) public initializer {
         tazos = _tazos;
@@ -79,38 +82,30 @@ contract StakingArena is ERC1155HolderUpgradeable, AccessControlUpgradeable {
 
     function depositERC1155(uint8 _pid) external {
         Pool memory pool = poolInfo[_pid];
-        ITazos _tokenContract = ITazos(pool.tokenAddress);
+        address _tokenAddress = pool.tokenAddress;
         uint256 _tokenId = pool.tokenId;
+        pool.lastRewardPeriod = getCurrentPeriod();
 
-        _tokenContract.safeTransferFrom(
-            _msgSender(),
-            address(this),
-            _tokenId,
-            1,
-            bytes("")
-        );
+        pool.tokenType == TokenTypes.ERC1155
+            ? _pullERC1155(_tokenAddress, _tokenId)
+            : _pullERC721(_tokenAddress, _tokenId);
 
-        tazos.mint(_msgSender(), _pid, 1, bytes(""));
+        ownerInfo[_tokenAddress][_tokenId] = _msgSender();
     }
 
     function withdrawERC1155(uint8 _pid) external {
         Pool memory pool = poolInfo[_pid];
-        ITazos _tokenContract = ITazos(pool.tokenAddress);
+        address _tokenAddress = pool.tokenAddress;
         uint256 _tokenId = pool.tokenId;
         uint256 _currentPeriod = getCurrentPeriod();
         uint256 _noOfPeriods = _currentPeriod - pool.lastRewardPeriod;
         pool.lastRewardPeriod = _currentPeriod;
         poolInfo[_pid] = pool;
+        ownerInfo[_tokenAddress][_tokenId] = address(0);
 
-        tazos.burnFrom(_msgSender(), _pid, 1);
-
-        _tokenContract.safeTransferFrom(
-            address(this),
-            _msgSender(),
-            _tokenId,
-            1,
-            bytes("")
-        );
+        pool.tokenType == TokenTypes.ERC1155
+            ? _pushERC1155(_tokenAddress, _tokenId)
+            : _pushERC721(_tokenAddress, _tokenId);
 
         _issueReward(_noOfPeriods, _pid);
     }
@@ -122,6 +117,42 @@ contract StakingArena is ERC1155HolderUpgradeable, AccessControlUpgradeable {
     function _issueReward(uint256 _noOfPeriods, uint8 _pid) internal {
         uint256 rewardAmount = (_noOfPeriods * REWARD_PER_PERIOD);
         tazos.mint(_msgSender(), _pid, rewardAmount, bytes(""));
+    }
+
+    function _pullERC1155(address _tokenContract, uint256 _tokenId) internal {
+        IERC1155Upgradeable(_tokenContract).safeTransferFrom(
+            _msgSender(),
+            address(this),
+            _tokenId,
+            1,
+            bytes("")
+        );
+    }
+
+    function _pullERC721(address _tokenContract, uint256 _tokenId) internal {
+        IERC721Upgradeable(_tokenContract).safeTransferFrom(
+            _msgSender(),
+            address(this),
+            _tokenId
+        );
+    }
+
+    function _pushERC1155(address _tokenContract, uint256 _tokenId) internal {
+        IERC1155Upgradeable(_tokenContract).safeTransferFrom(
+            address(this),
+            _msgSender(),
+            _tokenId,
+            1,
+            bytes("")
+        );
+    }
+
+    function _pushERC721(address _tokenContract, uint256 _tokenId) internal {
+        IERC721Upgradeable(_tokenContract).safeTransferFrom(
+            address(this),
+            _msgSender(),
+            _tokenId
+        );
     }
 
     function supportsInterface(bytes4 interfaceId)

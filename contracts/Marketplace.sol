@@ -6,10 +6,12 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol"
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/IERC1155Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "./interfaces/ITazos.sol";
 
 contract Marketplace is AccessControlUpgradeable {
     uint256 public counter;
     IERC20Upgradeable public weth;
+    ITazos public tazos;
 
     enum TokenTypes {
         ERC1155,
@@ -36,8 +38,12 @@ contract Marketplace is AccessControlUpgradeable {
     event ItemListedForSale(uint256 indexed _saleId);
     event Sold(uint256 indexed _saleId, address _seller);
 
-    function initialize(IERC20Upgradeable _weth) external initializer {
+    function initialize(IERC20Upgradeable _weth, ITazos _tazos)
+        external
+        initializer
+    {
         weth = _weth;
+        tazos = _tazos;
     }
 
     function listForSale(
@@ -59,7 +65,7 @@ contract Marketplace is AccessControlUpgradeable {
             ),
             "Marketplace: Permission not granted to manage asset"
         );
-        
+
         counter++;
         saleId = saleIdByCommodity[_erc1155][_id] == 0
             ? counter
@@ -100,7 +106,7 @@ contract Marketplace is AccessControlUpgradeable {
             ),
             "Marketplace: Permission not granted to manage asset"
         );
-        
+
         counter++;
         saleId = saleIdByCommodity[_erc721][_id] == 0
             ? counter
