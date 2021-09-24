@@ -188,7 +188,7 @@ contract Marketplace is AccessControlUpgradeable {
             uint256 fee = (FEE_RATIO.mul(amount)) / UNIT;
             uint256 effectiveAmount = amount - fee;
             acceptedERC20.transferFrom(msg.sender, address(this), amount);
-            acceptedERC20.transferFrom(address(this), seller, effectiveAmount);
+            acceptedERC20.transfer(seller, effectiveAmount);
         }
     }
 

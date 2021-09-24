@@ -59,7 +59,7 @@ contract StakingArena is ERC1155HolderUpgradeable, AccessControlUpgradeable {
 
     function finalize() external onlyRole(ADMIN_ROLE) {
         finalized = true;
-        tazos.mint(_msgSender(), 2 * availableReward);
+        tazos.mint(address(this), 2 * availableReward);
     }
 
     function createPool(
