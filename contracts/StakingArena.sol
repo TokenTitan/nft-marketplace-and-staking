@@ -17,7 +17,7 @@ contract StakingArena is ERC1155HolderUpgradeable, AccessControlUpgradeable {
     bytes32 internal constant ADMIN_ROLE =
         0xa49807205ce4d355092ef5a8a18f56e8913cf4a201fbe287825b095693c21775;
     uint256 public constant UNIT = 10**18;
-    uint256 public constant PERIOD_DURATION = 30 days;
+    uint256 public constant PERIOD_DURATION = 1 seconds;
     uint256 public constant REWARD_PER_PERIOD = 1;
 
     uint8 public counter;
@@ -107,16 +107,16 @@ contract StakingArena is ERC1155HolderUpgradeable, AccessControlUpgradeable {
             ? _pushERC1155(_tokenAddress, _tokenId)
             : _pushERC721(_tokenAddress, _tokenId);
 
-        _issueReward(_noOfPeriods, _pid);
+        _issueReward(_noOfPeriods);
     }
 
     function getCurrentPeriod() public view returns (uint256) {
         return (block.timestamp - startTime) / PERIOD_DURATION;
     }
 
-    function _issueReward(uint256 _noOfPeriods, uint8 _pid) internal {
+    function _issueReward(uint256 _noOfPeriods) internal {
         uint256 rewardAmount = (_noOfPeriods * REWARD_PER_PERIOD);
-        tazos.mint(_msgSender(), _pid, rewardAmount, bytes(""));
+        tazos.mint(_msgSender(), rewardAmount);
     }
 
     function _pullERC1155(address _tokenContract, uint256 _tokenId) internal {

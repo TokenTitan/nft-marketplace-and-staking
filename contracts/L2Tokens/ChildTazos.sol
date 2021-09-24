@@ -1,102 +1,36 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.0;
+pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
-contract ChildTazos is ERC1155Upgradeable, AccessControlUpgradeable {
+contract ChildTazos is ERC20Upgradeable {
     address public childChainManagerProxy;
-    uint256 public counter;
 
-    // keccak256("ADMIN_ROLE");
-    bytes32 internal constant ADMIN_ROLE =
-        0xa49807205ce4d355092ef5a8a18f56e8913cf4a201fbe287825b095693c21775;
-
-    // Events
-    event ItemForged(uint256 _id);
-
-    // Modifiers
-    modifier onlyAdmin() {
-        require(
-            hasRole(ADMIN_ROLE, msg.sender),
-            "ChildTazos: Only Admin can perform this action"
-        );
-        _;
-    }
-
-    function initialize(string memory _uri, address _childChainManagerProxy)
-        external
-        initializer
-    {
-        _setupRole(ADMIN_ROLE, msg.sender);
-        _setURI(_uri);
+    function initialize(address _childChainManagerProxy) external initializer {
         childChainManagerProxy = _childChainManagerProxy;
+        __ERC20_init("ChildTazos", "TAZ");
     }
 
     /**
-     * @notice called when tokens are deposited on root chain
+     * @notice called when token is deposited on root chain
      * @dev Should be callable only by ChildChainManager
-     * Should handle deposit by minting the required tokens for user
+     * Should handle deposit by minting the required amount for user
      * Make sure minting is done only by this function
      * @param user user address for whom deposit is being done
-     * @param depositData abi encoded ids array and amounts array
+     * @param depositData abi encoded amount
      */
-    function deposit(address user, bytes calldata depositData)
-        external
-    {
-        require(msg.sender == childChainManagerProxy, "ChildTazos: Unauthorized Call");
-        (
-            uint256[] memory ids,
-            uint256[] memory amounts,
-            bytes memory data
-        ) = abi.decode(depositData, (uint256[], uint256[], bytes));
-
-        require(
-            user != address(0),
-            "ChildMintableERC1155: INVALID_DEPOSIT_USER"
-        );
-
-        _mintBatch(user, ids, amounts, data);
+    function deposit(address user, bytes calldata depositData) external {
+        uint256 amount = abi.decode(depositData, (uint256));
+        _mint(user, amount);
     }
 
     /**
-     * @notice called when user wants to withdraw single token back to root chain
+     * @notice called when user wants to withdraw tokens back to root chain
      * @dev Should burn user's tokens. This transaction will be verified when exiting on root chain
-     * @param id id to withdraw
-     * @param amount amount to withdraw
+     * @param amount amount of tokens to withdraw
      */
-    function withdrawSingle(uint256 id, uint256 amount) external {
-        _burn(_msgSender(), id, amount);
-    }
-
-    /**
-     * @notice called when user wants to batch withdraw tokens back to root chain
-     * @dev Should burn user's tokens. This transaction will be verified when exiting on root chain
-     * @param ids ids to withdraw
-     * @param amounts amounts to withdraw
-     */
-    function withdrawBatch(uint256[] calldata ids, uint256[] calldata amounts)
-        external
-    {
-        _burnBatch(_msgSender(), ids, amounts);
-    }
-
-    function updateChildChainManager(address newChildChainManagerProxy)
-        external
-        onlyAdmin
-    {
-        require(newChildChainManagerProxy != address(0), "ChildTazos: Bad address");
-        childChainManagerProxy = newChildChainManagerProxy;
-    }
-
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        virtual
-        override(ERC1155Upgradeable, AccessControlUpgradeable)
-        returns (bool)
-    {
-        return super.supportsInterface(interfaceId);
+    function withdraw(uint256 amount) external {
+        _burn(_msgSender(), amount);
     }
 }
