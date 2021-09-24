@@ -6,7 +6,7 @@ import "../L1Tokens/L1ERC20.sol";
 
 contract L2ERC20 is L1ERC20 {
     address public childChainManagerProxy;
-    
+
     function initialize(address _childChainManagerProxy) external {
         childChainManagerProxy = _childChainManagerProxy;
         super.initialize();
@@ -20,9 +20,11 @@ contract L2ERC20 is L1ERC20 {
      * @param user user address for whom deposit is being done
      * @param depositData abi encoded amount
      */
-    function deposit(address user, bytes calldata depositData)
-        external
-    {
+    function deposit(address user, bytes calldata depositData) external {
+        require(
+            msg.sender == childChainManagerProxy,
+            "Asset: Unauthorized Call"
+        );
         uint256 amount = abi.decode(depositData, (uint256));
         _mint(user, amount);
     }

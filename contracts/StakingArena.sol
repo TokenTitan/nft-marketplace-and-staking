@@ -16,9 +16,11 @@ contract StakingArena is ERC1155HolderUpgradeable, AccessControlUpgradeable {
     // keccak256("ADMIN_ROLE");
     bytes32 internal constant ADMIN_ROLE =
         0xa49807205ce4d355092ef5a8a18f56e8913cf4a201fbe287825b095693c21775;
-    uint256 public constant UNIT = 10**18;
     uint256 public constant PERIOD_DURATION = 1 seconds;
     uint256 public constant REWARD_PER_PERIOD = 1;
+
+    bool public finalized = false;
+    uint256 public availableReward = 5**10;
 
     uint8 public counter;
     uint256 public totalAllocPoint;
@@ -44,10 +46,20 @@ contract StakingArena is ERC1155HolderUpgradeable, AccessControlUpgradeable {
     mapping(address => mapping(uint256 => uint8)) public poolIdByAddress;
     mapping(address => mapping(uint256 => address)) public ownerInfo;
 
+    modifier isFinalized() {
+        require(finalized, "StakingArena: Yet to be Finalized");
+        _;
+    }
+
     function initialize(ITazos _tazos) public initializer {
         tazos = _tazos;
         startTime = block.timestamp;
         _setupRole(ADMIN_ROLE, _msgSender());
+    }
+
+    function finalize() external onlyRole(ADMIN_ROLE) {
+        finalized = true;
+        tazos.mint(_msgSender(), 2 * availableReward);
     }
 
     function createPool(
@@ -80,7 +92,7 @@ contract StakingArena is ERC1155HolderUpgradeable, AccessControlUpgradeable {
         totalAllocPoint = totalAllocPoint.add(_allocPoint);
     }
 
-    function depositERC1155(uint8 _pid) external {
+    function deposit(uint8 _pid) external isFinalized {
         Pool memory pool = poolInfo[_pid];
         address _tokenAddress = pool.tokenAddress;
         uint256 _tokenId = pool.tokenId;
@@ -93,7 +105,7 @@ contract StakingArena is ERC1155HolderUpgradeable, AccessControlUpgradeable {
         ownerInfo[_tokenAddress][_tokenId] = _msgSender();
     }
 
-    function withdrawERC1155(uint8 _pid) external {
+    function withdraw(uint8 _pid) external isFinalized {
         Pool memory pool = poolInfo[_pid];
         address _tokenAddress = pool.tokenAddress;
         uint256 _tokenId = pool.tokenId;
@@ -116,7 +128,12 @@ contract StakingArena is ERC1155HolderUpgradeable, AccessControlUpgradeable {
 
     function _issueReward(uint256 _noOfPeriods) internal {
         uint256 rewardAmount = (_noOfPeriods * REWARD_PER_PERIOD);
-        tazos.mint(_msgSender(), rewardAmount);
+        require(
+            rewardAmount < availableReward,
+            "StakingArena: Rewards Limit Reached"
+        );
+        availableReward -= rewardAmount;
+        tazos.transfer(_msgSender(), rewardAmount);
     }
 
     function _pullERC1155(address _tokenContract, uint256 _tokenId) internal {

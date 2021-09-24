@@ -21,6 +21,10 @@ contract ChildTazos is ERC20Upgradeable {
      * @param depositData abi encoded amount
      */
     function deposit(address user, bytes calldata depositData) external {
+        require(
+            msg.sender == childChainManagerProxy,
+            "Asset: Unauthorized Call"
+        );
         uint256 amount = abi.decode(depositData, (uint256));
         _mint(user, amount);
     }
