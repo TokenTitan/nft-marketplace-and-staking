@@ -6,12 +6,16 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol"
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/IERC1155Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
-import "./interfaces/ITazos.sol";
+import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 
 contract Marketplace is AccessControlUpgradeable {
+    using SafeMathUpgradeable for uint256;
+
+    uint256 public constant UNIT = 10**18;
+    uint256 public constant FEE_RATIO = (2 * UNIT) / 10;
     uint256 public counter;
     IERC20Upgradeable public weth;
-    ITazos public tazos;
+    IERC20Upgradeable public tazos;
 
     enum TokenTypes {
         ERC1155,
@@ -38,7 +42,7 @@ contract Marketplace is AccessControlUpgradeable {
     event ItemListedForSale(uint256 indexed _saleId);
     event Sold(uint256 indexed _saleId, address _seller);
 
-    function initialize(IERC20Upgradeable _weth, ITazos _tazos)
+    function initialize(IERC20Upgradeable _weth, IERC20Upgradeable _tazos)
         external
         initializer
     {
@@ -130,6 +134,10 @@ contract Marketplace is AccessControlUpgradeable {
         emit ItemListedForSale(saleId);
     }
 
+    function cancelSale(uint256 _saleId) external {
+        commoditiesForSale[_saleId].available = false;
+    }
+
     function buy(uint256 _saleId) external payable {
         Commodity memory commodity = commoditiesForSale[_saleId];
         require(
@@ -139,35 +147,48 @@ contract Marketplace is AccessControlUpgradeable {
 
         commoditiesForSale[_saleId].available = false;
         commoditiesForSale[_saleId].seller = msg.sender;
+        IERC20Upgradeable acceptedERC20 = commodity.acceptedERC20;
+        address seller = commodity.seller;
+        uint256 price = commodity.price;
 
         if (msg.value == 0) {
             require(
-                commodity.acceptedERC20.balanceOf(msg.sender) > commodity.price,
+                acceptedERC20.balanceOf(msg.sender) > price,
                 "Marketplace: Insufficient Balance"
             );
             require(
-                commodity.acceptedERC20.allowance(msg.sender, address(this)) >=
-                    commodity.price,
+                acceptedERC20.allowance(msg.sender, address(this)) >= price,
                 "Marketplace: Insufficient allowance to fetch funds"
             );
 
-            commodity.acceptedERC20.transferFrom(
-                msg.sender,
-                commodity.seller,
-                commodity.price
-            );
+            _fetchTokens(acceptedERC20, seller, price);
             _executeSale(commodity, _saleId);
-        } else if (
-            commodity.acceptedERC20 == weth && commodity.price >= msg.value
-        ) {
-            uint256 remainder = msg.value - commodity.price;
+        } else if (acceptedERC20 == weth && price >= msg.value) {
+            uint256 remainder = msg.value - price;
+            uint256 fee = (FEE_RATIO.mul(price)) / UNIT;
+            uint256 effectivePrice = price - fee;
             if (remainder != 0) {
                 payable(msg.sender).transfer(remainder);
             }
-            payable(commodity.seller).transfer(commodity.price);
+            payable(commodity.seller).transfer(effectivePrice);
             _executeSale(commodity, _saleId);
         } else {
             payable(msg.sender).transfer(msg.value);
+        }
+    }
+
+    function _fetchTokens(
+        IERC20Upgradeable acceptedERC20,
+        address seller,
+        uint256 amount
+    ) internal {
+        if (acceptedERC20 == tazos) {
+            acceptedERC20.transferFrom(msg.sender, seller, amount);
+        } else {
+            uint256 fee = (FEE_RATIO.mul(amount)) / UNIT;
+            uint256 effectiveAmount = amount - fee;
+            acceptedERC20.transferFrom(msg.sender, address(this), amount);
+            acceptedERC20.transferFrom(address(this), seller, effectiveAmount);
         }
     }
 
@@ -188,10 +209,6 @@ contract Marketplace is AccessControlUpgradeable {
                 bytes("Commodity Bought")
             );
         emit Sold(_saleId, msg.sender);
-    }
-
-    function cancelSale(uint256 _saleId) external {
-        commoditiesForSale[_saleId].available = false;
     }
 
     // Getters
