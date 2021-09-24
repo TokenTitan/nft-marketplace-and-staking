@@ -28,6 +28,7 @@ contract Tazos is
     bytes32 public constant PAUSER_ROLE =
         0x65d7a28e3265b37a6474929f336521b332c1681b933f6cb9f3376673440d862a;
 
+
     function initialize(string memory uri) public initializer {
         __Tazos_init(uri);
     }

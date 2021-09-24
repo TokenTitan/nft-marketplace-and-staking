@@ -2,14 +2,36 @@
 
 pragma solidity 0.8.0;
 
-import "../L1Tokens/Asset1155.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
-contract ChildAsset1155 is Asset1155 {
+contract ChildTazos is ERC1155Upgradeable, AccessControlUpgradeable {
     address public childChainManagerProxy;
+    uint256 public counter;
 
-    function initialize(string memory _uri, address _childChainManagerProxy) external {
+    // keccak256("ADMIN_ROLE");
+    bytes32 internal constant ADMIN_ROLE =
+        0xa49807205ce4d355092ef5a8a18f56e8913cf4a201fbe287825b095693c21775;
+
+    // Events
+    event ItemForged(uint256 _id);
+
+    // Modifiers
+    modifier onlyAdmin() {
+        require(
+            hasRole(ADMIN_ROLE, msg.sender),
+            "ChildTazos: Only Admin can perform this action"
+        );
+        _;
+    }
+
+    function initialize(string memory _uri, address _childChainManagerProxy)
+        external
+        initializer
+    {
+        _setupRole(ADMIN_ROLE, msg.sender);
+        _setURI(_uri);
         childChainManagerProxy = _childChainManagerProxy;
-        super.initialize(_uri);
     }
 
     /**
@@ -23,7 +45,7 @@ contract ChildAsset1155 is Asset1155 {
     function deposit(address user, bytes calldata depositData)
         external
     {
-        require(msg.sender == childChainManagerProxy, "ChildAsset1155: Unauthorized Call");
+        require(msg.sender == childChainManagerProxy, "ChildTazos: Unauthorized Call");
         (
             uint256[] memory ids,
             uint256[] memory amounts,
@@ -64,7 +86,17 @@ contract ChildAsset1155 is Asset1155 {
         external
         onlyAdmin
     {
-        require(newChildChainManagerProxy != address(0), "ChildAsset1155: Bad address");
+        require(newChildChainManagerProxy != address(0), "ChildTazos: Bad address");
         childChainManagerProxy = newChildChainManagerProxy;
+    }
+
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(ERC1155Upgradeable, AccessControlUpgradeable)
+        returns (bool)
+    {
+        return super.supportsInterface(interfaceId);
     }
 }

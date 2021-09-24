@@ -2,43 +2,19 @@
 
 pragma solidity 0.8.0;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "../L1Tokens/Asset721.sol";
 
-contract ChildAsset721 is ERC721Upgradeable, AccessControlUpgradeable {
+contract ChildAsset721 is Asset721 {
     address public childChainManagerProxy;
-    uint256 public counter;
 
     // limit batching of tokens due to gas limit restrictions
     uint256 public constant BATCH_LIMIT = 20;
 
-    // keccak256("ADMIN_ROLE");
-    bytes32 internal constant ADMIN_ROLE =
-        0xa49807205ce4d355092ef5a8a18f56e8913cf4a201fbe287825b095693c21775;
-
-    // Events
-    event ItemForged(uint256 _id);
     event WithdrawnBatch(address indexed user, uint256[] tokenIds);
 
-    // Modifiers
-    modifier onlyAdmin() {
-        require(
-            hasRole(ADMIN_ROLE, msg.sender),
-            "Asset: Only Admin can perform this action"
-        );
-        _;
-    }
-
-    function initialize(address _childChainManagerProxy) external initializer {
-        _setupRole(ADMIN_ROLE, msg.sender);
+    function initialize(address _childChainManagerProxy) external {
         childChainManagerProxy = _childChainManagerProxy;
-    }
-
-    function forge(address _user) external onlyAdmin returns (uint256) {
-        counter++;
-        _mint(_user, counter);
-        emit ItemForged(counter);
-        return counter;
+        super.initialize();
     }
 
     /**
@@ -108,15 +84,5 @@ contract ChildAsset721 is ERC721Upgradeable, AccessControlUpgradeable {
     {
         require(newChildChainManagerProxy != address(0), "Asset: Bad address");
         childChainManagerProxy = newChildChainManagerProxy;
-    }
-
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        virtual
-        override(ERC721Upgradeable, AccessControlUpgradeable)
-        returns (bool)
-    {
-        return super.supportsInterface(interfaceId);
     }
 }

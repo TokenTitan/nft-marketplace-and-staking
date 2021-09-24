@@ -24,7 +24,7 @@ contract Asset721 is ERC721Upgradeable, AccessControlUpgradeable {
         _;
     }
 
-    function initialize() external initializer {
+    function initialize() public initializer {
         _setupRole(ADMIN_ROLE, msg.sender);
     }
 

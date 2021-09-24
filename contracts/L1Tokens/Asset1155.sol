@@ -24,7 +24,7 @@ contract Asset1155 is ERC1155Upgradeable, AccessControlUpgradeable {
         _;
     }
 
-    function initialize(string memory _uri) external initializer {
+    function initialize(string memory _uri) public initializer {
         _setupRole(ADMIN_ROLE, msg.sender);
         _setURI(_uri);
     }
