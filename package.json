@@ -4,7 +4,8 @@
   "description": "This is a sample nft marketplace project",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "compile": "npx hardhat compile",
+    "deploy": "yarn hardhat --network $NETWORK deploy"
   },
   "repository": {
     "type": "git",
@@ -17,11 +18,15 @@
   },
   "homepage": "https://github.com/capedcrusader11/nft-marketplace-mock#readme",
   "devDependencies": {
-    "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@^0.3.0-beta.10",
+    "@nomiclabs/hardhat-etherscan": "^2.1.6",
+    "@openzeppelin/hardhat-upgrades": "^1.10.0",
+    "dotenv": "^10.0.0",
     "ethers": "^5.4.6",
-    "hardhat": "^2.6.1"
+    "hardhat": "^2.6.1",
+    "hardhat-deploy": "^0.9.1"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.3.1"
+    "@openzeppelin/contracts-upgradeable": "^4.3.1"
   }
 }
