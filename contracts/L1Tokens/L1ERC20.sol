@@ -12,8 +12,7 @@ contract L1ERC20 is ERC20Upgradeable, AccessControlUpgradeable {
     bytes32 internal constant ADMIN_ROLE =
         0xa49807205ce4d355092ef5a8a18f56e8913cf4a201fbe287825b095693c21775;
 
-    // modifier
-        // Modifiers
+    // Modifiers
     modifier onlyAdmin() {
         require(
             hasRole(ADMIN_ROLE, msg.sender),
