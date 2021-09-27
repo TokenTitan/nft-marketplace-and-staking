@@ -16,11 +16,11 @@ contract StakingArena is ERC1155HolderUpgradeable, AccessControlUpgradeable {
     // keccak256("ADMIN_ROLE");
     bytes32 internal constant ADMIN_ROLE =
         0xa49807205ce4d355092ef5a8a18f56e8913cf4a201fbe287825b095693c21775;
-    uint256 public constant PERIOD_DURATION = 1 seconds;
+    uint256 public constant PERIOD_DURATION = 1 minutes;
     uint256 public constant REWARD_PER_PERIOD = 1;
 
-    bool public finalized = false;
-    uint256 public availableReward = 5**10;
+    bool public finalized;
+    uint256 public availableReward;
 
     uint8 public counter;
     uint256 public totalAllocPoint;
@@ -51,13 +51,15 @@ contract StakingArena is ERC1155HolderUpgradeable, AccessControlUpgradeable {
         _;
     }
 
-    function initialize(ITazos _tazos) public initializer {
+    function initialize(ITazos _tazos) external initializer {
         tazos = _tazos;
         startTime = block.timestamp;
+        availableReward = 5**10;
         _setupRole(ADMIN_ROLE, _msgSender());
     }
 
     function finalize() external onlyRole(ADMIN_ROLE) {
+        require(!finalized, "StakingArena: Already Finalized");
         finalized = true;
         tazos.mint(address(this), 2 * availableReward);
     }
