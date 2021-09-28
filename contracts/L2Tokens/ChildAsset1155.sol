@@ -7,7 +7,7 @@ import "../L1Tokens/Asset1155.sol";
 contract ChildAsset1155 is Asset1155 {
     address public childChainManagerProxy;
 
-    function initialize(string memory _uri, address _childChainManagerProxy) external {
+    function init(string memory _uri, address _childChainManagerProxy) external {
         childChainManagerProxy = _childChainManagerProxy;
         super.initialize(_uri);
     }

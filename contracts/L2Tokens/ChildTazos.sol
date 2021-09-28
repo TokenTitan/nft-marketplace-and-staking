@@ -7,7 +7,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 contract ChildTazos is ERC20Upgradeable {
     address public childChainManagerProxy;
 
-    function initialize(address _childChainManagerProxy) external initializer {
+    function init(address _childChainManagerProxy) external initializer {
         childChainManagerProxy = _childChainManagerProxy;
         __ERC20_init("ChildTazos", "TAZ");
     }
