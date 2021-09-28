@@ -12,7 +12,7 @@ contract ChildAsset721 is Asset721 {
 
     event WithdrawnBatch(address indexed user, uint256[] tokenIds);
 
-    function initialize(address _childChainManagerProxy) external {
+    function init(address _childChainManagerProxy) external {
         childChainManagerProxy = _childChainManagerProxy;
         super.initialize();
     }
